@@ -1,0 +1,16 @@
+% Set up a phase matrix `ph`, mask `mask`, and spacing `delta`.
+M = 256; % Example matrix size
+delta = 0.01; % Example point spacing
+ph = phasescreen2_sh(M, delta, 1000, 0,01, 1e-7, delta, delta, 1, 1); % Example phase matrix with random values
+mask = ones(M, M); % Example mask (uniform region)
+
+% Compute structure function `D` using the provided function
+D = str_fcn2_ft(ph, mask, delta);
+D_row = D(1,:);
+disp(D(1,:));
+figure;
+plot(D);
+title('Structure Function D vs x');
+xlabel('x (m)');
+ylabel('D(x)');
+grid on;

@@ -1,0 +1,89 @@
+% Parameters
+N = 1024;    % Number of grid points
+delta = 1;   % Grid spacing [m]
+l0 = 10;     % Inner scale [m]
+delta_x = delta;
+delta_y = delta;
+delta_z = delta;
+wavelength = 5e-7;
+Cn = 1e-14;
+M_values = [512, 1024, 2048];
+
+% Define parameters for phase screen generation
+num_trials = 500;           % Reduced trial count for computational efficiency
+E_randomized = zeros(num_trials, length(M_values)); % Placeholder for RMS error data
+central_phase_samples = zeros(num_trials, length(M_values));
+phase_diff_x_samples = zeros(num_trials, length(M_values));
+phase_diff_y_samples = zeros(num_trials, length(M_values));
+
+% Define different L0 values
+L0_values = [1 * N * delta_x, 10^2 * N * delta_x, 10^4 * N * delta_x, 10^5 * N * delta_x];
+
+% Loop over grid sizes and calculate RMS error for each
+for grid_idx = 1:length(M_values)
+    M = M_values(grid_idx);
+    phase_errors = zeros(num_trials, 1);
+    
+    for trial = 1:num_trials
+    for L0_idx = 1:length(L0_values)
+        L0 = L0_values(L0_idx);  % Set L0 for each case
+        
+        % Step 1: Generate random phase screen with current L0
+        phase_screen = phasescreen2(M, delta, L0, l0, wavelength, Cn, delta_x, delta_y, delta_z);
+        
+        % Log key parameters
+        center_phase = phase_screen(M/2, M/2);  % Central phase
+        central_phase_samples(trial, grid_idx) = center_phase;
+
+        % Compute the absolute phase and relative phase differences
+        absolute_phase = abs(phase_screen);  % Absolute phase (magnitude)
+        relative_phase_x = diff(phase_screen, 1, 2); % Relative phase in x-direction
+        relative_phase_y = diff(phase_screen, 1, 1); % Relative phase in y-direction
+
+        % Compute the natural log of the magnitude of the absolute phase
+        log_magnitude_abs_phase = log(abs(absolute_phase) + 1e-10); % Log of absolute phase (avoid log(0))
+
+        % Store the sample values for later histogram plotting
+        phase_diff_x_samples(trial, grid_idx) = mean(mean(relative_phase_x));
+        phase_diff_y_samples(trial, grid_idx) = mean(mean(relative_phase_y));
+        end
+    end
+end
+
+% Plotting for different outer scales
+figure;
+subplot(2,3,1);
+histogram(real(absolute_phase(:)), 'Normalization', 'pdf'); % Absolute phase
+title(sprintf('Histogram of Absolute Phase for L0 = %.1f', L0));
+xlabel('Absolute Phase');
+ylabel('Probability Density');
+
+subplot(2,3,2);
+histogram(real(relative_phase_x(:)), 'Normalization', 'pdf'); % Relative phase in x-direction
+title(sprintf('Histogram of Relative Phase X for L0 = %.1f', L0));
+xlabel('Relative Phase X');
+ylabel('Probability Density');
+
+subplot(2,3,3);
+histogram(log_magnitude_abs_phase(:), 'Normalization', 'pdf'); % Log of the magnitude of absolute phase
+title(sprintf('Log of Magnitude of Absolute Phase for L0 = %.1f', L0));
+xlabel('Log(Magnitude of Absolute Phase)');
+ylabel('Probability Density');
+
+subplot(2,3,4);
+histogram(real(absolute_phase(:)), 'Normalization', 'pdf'); % Absolute phase for L0 = 10^2 * M * delta_x
+title(sprintf('Histogram of Absolute Phase for L0 = %.1f', L0));
+xlabel('Absolute Phase');
+ylabel('Probability Density');
+
+subplot(2,3,5);
+histogram(real(relative_phase_x(:)), 'Normalization', 'pdf'); % Relative phase for L0 = 10^2 * M * delta_x
+title(sprintf('Histogram of Relative Phase X for L0 = %.1f', L0));
+xlabel('Relative Phase X');
+ylabel('Probability Density');
+
+subplot(2,3,6);
+histogram(log_magnitude_abs_phase(:), 'Normalization', 'pdf'); % Log of absolute phase for L0 = 10^2 * M * delta_x
+title(sprintf('Log of Magnitude of Absolute Phase for L0 = %.1f', L0));
+xlabel('Log(Magnitude of Absolute Phase)');
+ylabel('Probability Density');
